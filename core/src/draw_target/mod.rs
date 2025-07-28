@@ -7,6 +7,9 @@ use crate::{
     Pixel,
 };
 
+#[cfg(feature = "async_draw")]
+use core::future::Future;
+
 /// A target for embedded-graphics drawing operations.
 ///
 /// The `DrawTarget` trait is used to add embedded-graphics support to a display
@@ -449,7 +452,7 @@ pub trait AsyncDrawTarget: Dimensions {
     /// drawing method for a display that writes data to the hardware immediately. If possible, the
     /// other methods in this trait should be implemented to improve performance when rendering
     /// more contiguous pixel patterns.
-    async fn draw_iter_async<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    fn draw_iter_async<I>(&mut self, pixels: I) -> impl Future<Output = Result<(), Self::Error>>
     where
         I: IntoIterator<Item = Pixel<Self::Color>>;
 
@@ -471,11 +474,11 @@ pub trait AsyncDrawTarget: Dimensions {
     /// [`Rectangle::intersection`] method.
     ///
     /// The default implementation of this method delegates to [`draw_iter_async`](AsyncDrawTarget::draw_iter_async).
-    async fn fill_contiguous_async<I>(
+    fn fill_contiguous_async<I>(
         &mut self,
         area: &Rectangle,
         colors: I,
-    ) -> Result<(), Self::Error>
+    ) -> impl Future<Output = Result<(), Self::Error>>
     where
         I: IntoIterator<Item = Self::Color>,
     {
@@ -484,7 +487,6 @@ pub trait AsyncDrawTarget: Dimensions {
                 .zip(colors)
                 .map(|(pos, color)| Pixel(pos, color)),
         )
-        .await
     }
 
     /// Fill a given area with a solid color.
@@ -495,13 +497,12 @@ pub trait AsyncDrawTarget: Dimensions {
     ///
     /// The default implementation of this method calls [`fill_contiguous_async`](AsyncDrawTarget::fill_contiguous_async())
     /// with an iterator that repeats the given `color` for every point in `area`.
-    async fn fill_solid_async(
+    fn fill_solid_async(
         &mut self,
         area: &Rectangle,
         color: Self::Color,
-    ) -> Result<(), Self::Error> {
+    ) -> impl Future<Output = Result<(), Self::Error>> {
         self.fill_contiguous_async(area, core::iter::repeat(color))
-            .await
     }
 
     /// Fill the entire display with a solid color.
