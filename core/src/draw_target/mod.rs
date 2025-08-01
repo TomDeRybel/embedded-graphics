@@ -456,6 +456,17 @@ pub trait AsyncDrawTarget: Dimensions {
     where
         I: IntoIterator<Item = Pixel<Self::Color>>;
 
+    /// Draw a buffer of pixel color data to the display, defined by its area.
+    ///
+    /// The pixel data is written contiguously to this area, and the data is
+    /// assumed to be in the correct format for the display. The idea is a
+    /// low-overhead way to write pixels, using DMA transfers.
+    fn draw_buf_async(
+        &mut self,
+        area: &Rectangle,
+        colors: &[Self::Color],
+    ) -> impl Future<Output = Result<(), Self::Error>>;
+
     /// Fill a given area with an iterator providing a contiguous stream of pixel colors.
     ///
     /// Use this method to fill an area with contiguous, non-transparent pixel colors. Pixel
